@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Classified: Operation Bete</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            /* Deep dark pastel space background */
+            background: linear-gradient(135deg, #0d0a20 0%, #2b1f4a 50%, #1a1b35 100%);
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-anton { font-family: 'Anton', sans-serif; }
+        .font-mono { font-family: 'Space Mono', monospace; }
+
+        /* Star Canvas */
+        #star-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Screen Navigation Framework */
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform: translateY(30px) scale(0.95);
+            z-index: 10;
+        }
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
+            z-index: 20;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255,255,255,0.02);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .glass-btn:active { transform: scale(0.95); }
+        .glass-btn:hover:not(:disabled) { 
+            background: rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 0 20px rgba(255,255,255,0.2); 
+        }
+        .glass-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 280px;
+            margin: 1.5rem auto;
+            perspective: 1000px;
+        }
+        .light-cell {
+            aspect-ratio: 1;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(192, 132, 252, 0.3);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        .light-cell.on {
+            background: rgba(147, 197, 253, 0.9);
+            border-color: #f9a8d4;
+            box-shadow: 0 0 20px rgba(147, 197, 253, 0.6), inset 0 0 10px rgba(255,255,255,0.8);
+            transform: translateZ(10px) scale(1.05);
+        }
+
+        @keyframes violent-shake {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            10% { transform: translate(-15px, -15px) rotate(-10deg) scale(1.1); }
+            20% { transform: translate(15px, -15px) rotate(10deg) scale(1.1); }
+            30% { transform: translate(-15px, 15px) rotate(-10deg) scale(1.1); }
+            40% { transform: translate(15px, 15px) rotate(10deg) scale(1.1); }
+            50% { transform: translate(-15px, -15px) rotate(10deg) scale(1.1); }
+            60% { transform: translate(15px, -15px) rotate(-10deg) scale(1.1); }
+            70% { transform: translate(-15px, 15px) rotate(10deg) scale(1.1); }
+            80% { transform: translate(15px, 15px) rotate(-10deg) scale(1.1); }
+            90% { transform: translate(-15px, -15px) rotate(-10deg) scale(1.1); }
+            100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        }
+        .shake-violent {
+            display: inline-block;
+            animation: violent-shake 0.15s infinite;
+        }
+
+        .glitch-text {
+            position: relative;
+            color: white;
+            font-family: 'Anton', sans-serif;
+            text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.025em -0.05em 0 rgba(0,255,0,0.75), 0.025em 0.05em 0 rgba(0,0,255,0.75);
+            animation: glitch 500ms infinite;
+        }
+        @keyframes glitch {
+            0% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
+            14% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
+            15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
+            49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
+            50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
+            99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
+            100% { text-shadow: -0.025em 0 0 rgba(255,0,0,0.75), -0.025em -0.025em 0 rgba(0,255,0,0.75), -0.025em -0.05em 0 rgba(0,0,255,0.75); }
+        }
+
+        .sticker {
+            position: absolute;
+            font-size: 2.5rem;
+            z-index: 5;
+            pointer-events: none;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.4));
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #eab308, #22c55e);
+            width: 0%;
+            transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .custom-checkbox {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #a855f7;
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .custom-checkbox:checked {
+            background: #a855f7;
+        }
+        .custom-checkbox:checked::after {
+            content: '✔';
+            position: absolute;
+            color: white;
+            font-size: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .cake-wrapper {
+            position: relative;
+            width: 200px;
+            height: 160px;
+            margin: 2rem auto;
+            transform: scale(1.1);
+        }
+        .cake-base {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 70px;
+            background: linear-gradient(to right, #c084fc, #a855f7);
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .cake-top {
+            position: absolute;
+            bottom: 66px;
+            left: 10%;
+            width: 80%;
+            height: 50px;
+            background: linear-gradient(to right, #60a5fa, #3b82f6);
+            border-radius: 12px 12px 0 0;
+        }
+        .drip {
+            position: absolute;
+            top: -5px;
+            left: -2%;
+            width: 104%;
+            height: 20px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+        .candles-container {
+            position: absolute;
+            bottom: 110px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 40px;
+            z-index: 5;
+        }
+        .candle {
+            width: 14px;
+            height: 40px;
+            background: repeating-linear-gradient(45deg, #fff, #fff 4px, #f472b6 4px, #f472b6 8px);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+        .flame {
+            position: absolute;
+            top: -30px;
+            left: -3px;
+            width: 20px;
+            height: 30px;
+            background: #fbbf24;
+            border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+            box-shadow: 0 0 15px #fbbf24, 0 0 30px #f59e0b;
+            animation: flicker 0.1s infinite alternate;
+            transition: opacity 0.3s, transform 0.3s;
+            transform-origin: bottom center;
+        }
+        .flame.out { opacity: 0; transform: scale(0); animation: none; }
+        @keyframes flicker { 0% { transform: scale(1) rotate(-2deg); } 100% { transform: scale(1.1) rotate(2deg); } }
+        
+        .gradient-text {
+            background: linear-gradient(to right, #93c5fd, #f9a8d4, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Blinking Red Alert for Screen 2 */
+        .alert-bg {
+            background: radial-gradient(circle, rgba(220,38,38,0.2) 0%, transparent 70%);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="star-canvas"></canvas>
+    <div id="sticker-container" class="fixed inset-0 z-15 pointer-events-none overflow-hidden"></div>
+
+    <section id="stage-1" class="screen active">
+        <div class="glass-panel transform hover:scale-105 transition duration-500">
+            <h1 class="font-anton text-5xl md:text-6xl text-purple-300 mb-6 tracking-wider uppercase drop-shadow-lg">Protocol: BETE</h1>
+            <p class="text-blue-200 text-lg mb-10 font-mono tracking-tight">Initializing heavily classified birthday sequence...</p>
+            <button id="btn-1" class="glass-btn border-purple-400 text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.4)] w-full py-4 text-xl">
+                Click If You Dare, Bete
+            </button>
+        </div>
+    </section>
+
+    <section id="stage-2" class="screen">
+        <div class="absolute inset-0 alert-bg pointer-events-none z-0"></div>
+        <div class="glass-panel border-red-500/50 relative z-10">
+            <div class="text-6xl mb-4 animate-bounce">🚨</div>
+            <h2 class="text-3xl font-black text-red-400 mb-4 uppercase tracking-widest font-anton">Warning!</h2>
+            <h3 class="text-xl font-bold text-white mb-6">Too Much Seriousness Detected!</h3>
+            
+            <p class="text-gray-300 mb-8 font-medium leading-relaxed">
+                Bhai, thoda has le! Aaj tera birthday hai, koi corporate meeting nahi chal rahi. Itna serious ban ke kahan jayega? Smile kar thoda! 
+            </p>
+            
+            <button id="btn-2" class="glass-btn text-white bg-red-900/50 border-red-500 hover:bg-red-600 w-full">
+                Okay fine, I will smile 🙄
+            </button>
+        </div>
+    </section>
+
+    <section id="stage-3" class="screen">
+        <div class="glass-panel border-blue-500/30">
+            <h2 class="text-2xl font-black text-blue-300 mb-2 uppercase font-anton tracking-wider">Gamer Check</h2>
+            <p class="text-pink-200 mb-2 text-sm">Let's see if that serious brain works.</p>
+            <p class="text-gray-400 mb-6 text-xs italic">Turn ALL lights <span class="font-bold text-white">OFF</span>.</p>
+            
+            <div id="puzzle-grid" class="grid-container">
+                <!-- JS injects cells here -->
+            </div>
+
+            <div class="h-10 w-full flex items-center justify-center mt-2">
+                <p id="puzzle-feedback" class="text-pink-400 font-bold text-sm transition-opacity opacity-0 text-center"></p>
+            </div>
+
+            <button id="btn-3" class="glass-btn text-green-300 border-green-400 hidden w-full mt-4 bg-green-900/30">
+                Next Stage
+            </button>
+            
+            <p id="btn-giveup" class="text-pink-300 underline text-sm mt-4 cursor-pointer hover:text-pink-100 transition">
+                Haar Maan Li? (Give Up & Bypass)
+            </p>
+        </div>
+    </section>
+
+    <section id="stage-4" class="screen">
+        <div class="glass-panel border-yellow-500/30">
+            <div class="text-5xl mb-4">🤬</div>
+            <h2 class="text-2xl font-black text-yellow-300 mb-6 uppercase font-anton">Vocabulary Scan Complete</h2>
+            
+            <div class="text-left mb-6">
+                <p class="text-sm text-gray-300 mb-2 flex justify-between"><span>Normal Words:</span> <span class="text-white font-bold">1%</span></p>
+                <div class="progress-bar-container mb-4">
+                    <div class="progress-fill" id="prog-normal" style="width: 0%; background: #3b82f6;"></div>
+                </div>
+                
+                <p class="text-sm text-gray-300 mb-2 flex justify-between"><span>Gaali (MC/BC Level):</span> <span class="text-red-400 font-bold">99%</span></p>
+                <div class="progress-bar-container">
+                    <div class="progress-fill" id="prog-gali" style="width: 0%; background: #ef4444;"></div>
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-300 mb-8 italic">
+                "Muh kholta hai toh phool nahi, seedha heavy gaaliyan jhadti hain. You are a walking censor beep!"
+            </p>
+            
+            <button id="btn-4" class="glass-btn text-yellow-300 border-yellow-500 w-full">
+                Accept Reality
+            </button>
+        </div>
+    </section>
+
+    <section id="stage-5" class="screen">
+        <div class="text-center w-full px-4 flex flex-col items-center">
+            <h2 class="text-2xl md:text-3xl font-bold text-blue-200 mb-10 drop-shadow-md">
+                Time for your very special gift...
+            </h2>
+            
+            <div class="flex flex-col items-center justify-center space-y-6">
+                <div class="text-7xl md:text-8xl shake-violent">🙂</div>
+                <div class="text-[8rem] md:text-[12rem] shake-violent filter drop-shadow-[0_0_40px_rgba(255,255,255,0.4)] leading-none">🖕</div>
+                <h1 class="glitch-text text-5xl md:text-8xl mt-4 uppercase">
+                    FUCK YOU BHAII
+                </h1>
+            </div>
+
+            <button id="btn-5" class="mt-12 glass-btn text-white bg-black/60 border-white/20 text-sm hover:bg-black/90 px-8 py-3">
+                Okay, chill... show me the real thing.
+            </button>
+        </div>
+    </section>
+
+    <section id="stage-6" class="screen">
+        <div class="glass-panel border-green-500/30 text-left">
+            <h2 class="text-2xl font-black text-green-400 mb-4 uppercase font-anton text-center">Mandatory T&C</h2>
+            
+            <div class="bg-black/40 p-4 rounded-xl border border-white/10 mb-6 h-32 overflow-y-auto text-xs text-gray-300 space-y-2 font-mono">
+                <p>1. The Birthday Boy ("Bete") shall host a massive party.</p>
+                <p>2. A minimum of 5 Ludo matches must be played.</p>
+                <p>3. Bete agrees to pay for all food and beverages without doing any kanjoosi.</p>
+                <p>4. All arguments during Ludo will be won by the creator of this website.</p>
+                <p>5. No serious mode allowed during the party.</p>
+            </div>
+
+            <label class="flex items-center space-x-4 cursor-pointer mb-8 bg-white/5 p-3 rounded-lg border border-white/10 hover:bg-white/10 transition">
+                <input type="checkbox" id="party-checkbox" class="custom-checkbox flex-shrink-0">
+                <span class="text-sm font-semibold text-white">I agree to give a massive party (Ludo mandatory) and pay for everything.</span>
+            </label>
+
+            <button id="btn-6" class="glass-btn text-green-300 border-green-500 w-full bg-green-900/30" disabled>
+                Sign Contract
+            </button>
+        </div>
+    </section>
+
+    <section id="stage-7" class="screen">
+        <div class="glass-panel !max-w-2xl relative z-10 flex flex-col items-center bg-black/40">
+            <p id="cake-instruction" class="text-pink-300 font-bold mb-4 animate-pulse text-lg">
+                Tap the flames to blow out the candles!
+            </p>
+
+            <div id="the-cake" class="cake-wrapper">
+                <div class="candles-container">
+                    <div class="candle" onclick="extinguish(0)"><div class="flame" id="flame-0"></div></div>
+                    <div class="candle" onclick="extinguish(1)"><div class="flame" id="flame-1"></div></div>
+                    <div class="candle" onclick="extinguish(2)"><div class="flame" id="flame-2"></div></div>
+                </div>
+                <div class="cake-top"><div class="drip"></div></div>
+                <div class="cake-base"><div class="drip"></div></div>
+            </div>
+
+            <div id="final-message" class="opacity-0 transform translate-y-8 transition-all duration-1000 mt-6 w-full text-center">
+                <h1 class="font-anton text-4xl md:text-6xl text-white mb-4 tracking-wide">
+                    <span class="gradient-text">HAPPY BIRTHDAY MERA BETA!</span>
+                </h1>
+                <p class="text-sm md:text-base text-blue-100 font-medium mb-6 leading-relaxed px-4">
+                    Jokes apart, you might act way too serious all the time, and you might curse a lot, but you're genuinely the best brother. 
+                    Wishing you huge success, happiness, and a little less seriousness this year!
+                </p>
+                <div class="inline-block bg-white/10 p-4 rounded-xl border border-white/20 backdrop-blur-md">
+                    <p class="text-2xl font-black text-pink-300 drop-shadow-sm">Love you bro! ❤️</p>
+                    <p class="text-sm text-green-300 mt-2 font-bold uppercase font-mono">Now go open Ludo!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const canvas = document.getElementById('star-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let stars = [];
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 300; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: Math.random() * 1.8 + 0.2, 
+                    alpha: Math.random() * 0.8 + 0.2,
+                    speed: (Math.random() * 0.02) + 0.005,
+                    color: Math.random() > 0.3 ? '255,255,255' : (Math.random() > 0.5 ? '251,207,232' : '191,219,254')
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, width, height);
+            stars.forEach(star => {
+                star.alpha += star.speed;
+                if (star.alpha <= 0.1 || star.alpha >= 1) star.speed *= -1; 
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${star.color}, ${Math.abs(star.alpha)})`;
+                ctx.fill();
+            });
+            requestAnimationFrame(drawStars);
+        }
+
+        window.addEventListener('resize', () => { resizeCanvas(); initStars(); });
+        resizeCanvas();
+        initStars();
+        drawStars();
+
+        function navigate(hideId, showId, callback = null) {
+            const current = document.getElementById(hideId);
+            const next = document.getElementById(showId);
+            current.classList.remove('active');
+            setTimeout(() => { 
+                next.classList.add('active'); 
+                if(callback) callback();
+            }, 600);
+        }
+
+        document.getElementById('btn-1').addEventListener('click', () => {
+            navigate('stage-1', 'stage-2');
+            startFloatingEmojis(); // Start chaotic emojis in background
+        });
+
+        document.getElementById('btn-2').addEventListener('click', () => {
+            navigate('stage-2', 'stage-3', initPuzzle);
+        });
+
+        document.getElementById('btn-3').addEventListener('click', () => {
+            navigate('stage-3', 'stage-4', triggerGaliProgress);
+        });
+
+        document.getElementById('btn-4').addEventListener('click', () => {
+            navigate('stage-4', 'stage-5');
+        });
+
+        document.getElementById('btn-5').addEventListener('click', () => {
+            navigate('stage-5', 'stage-6');
+        });
+
+        document.getElementById('btn-6').addEventListener('click', () => {
+            navigate('stage-6', 'stage-7');
+        });
+
+        const stickersList = ['🤡', '🔥', '😂', '💸', '🍻', '💩', '😎', '🖕', '🎮'];
+        const stickerContainer = document.getElementById('sticker-container');
+
+        // Dynamically inject float animation with horizontal drift
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes driftUp {
+                0% { transform: translate(0, 0) rotate(0deg) scale(0.5); opacity: 0; }
+                10% { opacity: 0.8; }
+                90% { opacity: 0.8; }
+                100% { transform: translate(var(--drift), -110vh) rotate(360deg) scale(1.5); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+        function startFloatingEmojis() {
+            // Initial burst
+            for(let i=0; i<15; i++) spawnEmoji();
+            // Continuous loop
+            setInterval(spawnEmoji, 1200);
+        }
+
+        function spawnEmoji() {
+            const el = document.createElement('div');
+            el.className = 'sticker';
+            el.innerText = stickersList[Math.floor(Math.random() * stickersList.length)];
+            el.style.left = `${Math.random() * 90}vw`;
+            el.style.top = `105vh`; // start below screen
+            
+            // Random duration and drift
+            const duration = 5 + Math.random() * 5;
+            const drift = (Math.random() * 40 - 20) + 'vw';
+            
+            el.style.setProperty('--drift', drift);
+            el.style.animation = `driftUp ${duration}s linear forwards`;
+            
+            stickerContainer.appendChild(el);
+            setTimeout(() => el.remove(), duration * 1000);
+        }
+
+        let puzzleGrid = [];
+        const size = 3;
+        const gridContainer = document.getElementById('puzzle-grid');
+        const feedback = document.getElementById('puzzle-feedback');
+        const giveUpBtn = document.getElementById('btn-giveup');
+        const proceedBtn = document.getElementById('btn-3');
+        let puzzleSolved = false;
+        
+        function initPuzzle() {
+            puzzleGrid = [[1, 0, 1], [0, 1, 0], [1, 0, 1]]; // Solvable pattern
+            renderGrid();
+        }
+
+        function toggleLight(r, c) {
+            if (puzzleSolved) return;
+            puzzleGrid[r][c] ^= 1;
+            if (r > 0) puzzleGrid[r - 1][c] ^= 1;
+            if (r < size - 1) puzzleGrid[r + 1][c] ^= 1;
+            if (c > 0) puzzleGrid[r][c - 1] ^= 1;
+            if (c < size - 1) puzzleGrid[r][c + 1] ^= 1;
+            renderGrid();
+            checkWin();
+        }
+
+        function renderGrid() {
+            gridContainer.innerHTML = '';
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = `light-cell ${puzzleGrid[r][c] ? 'on' : ''}`;
+                    cell.onclick = () => toggleLight(r, c);
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        function checkWin() {
+            let isWin = true;
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    if (puzzleGrid[r][c] === 1) isWin = false;
+                }
+            }
+            if (isWin) winPuzzle("SYSTEM UNLOCKED. TU KHEL SAKTA HAI LUDO.", "text-green-300");
+        }
+
+        giveUpBtn.addEventListener('click', () => {
+            if(puzzleSolved) return;
+            puzzleSolved = true;
+            giveUpBtn.style.display = 'none';
+            feedback.className = "text-pink-400 font-bold text-sm transition-opacity opacity-100 text-center";
+            feedback.innerText = "Haha Noob! System auto-solving...";
+            
+            setTimeout(() => {
+                puzzleGrid = [[0,0,0],[0,0,0],[0,0,0]];
+                renderGrid();
+                setTimeout(() => winPuzzle("SYSTEM BYPASSED (NOOB MODE).", "text-pink-300"), 800);
+            }, 1200);
+        });
+
+        function winPuzzle(msg, colorClass) {
+            puzzleSolved = true;
+            gridContainer.style.pointerEvents = 'none';
+            giveUpBtn.style.display = 'none';
+            feedback.className = `${colorClass} font-bold text-sm transition-opacity opacity-100 text-center`;
+            feedback.innerText = msg;
+            proceedBtn.classList.remove('hidden');
+        }
+
+        function triggerGaliProgress() {
+            setTimeout(() => {
+                document.getElementById('prog-normal').style.width = '1%';
+                document.getElementById('prog-gali').style.width = '99%';
+            }, 500);
+        }
+
+        const checkbox = document.getElementById('party-checkbox');
+        const signBtn = document.getElementById('btn-6');
+        
+        checkbox.addEventListener('change', (e) => {
+            signBtn.disabled = !e.target.checked;
+        });
+
+        let flamesLit = 3;
+        window.extinguish = function(index) {
+            const flame = document.getElementById(`flame-${index}`);
+            if (!flame.classList.contains('out')) {
+                flame.classList.add('out');
+                flamesLit--;
+                if (flamesLit === 0) triggerCakeFinale();
+            }
+        };
+
+        function triggerCakeFinale() {
+            document.getElementById('cake-instruction').style.opacity = '0';
+            setTimeout(() => {
+                const finalMsg = document.getElementById('final-message');
+                finalMsg.style.opacity = '1';
+                finalMsg.style.transform = 'translateY(0)';
+                fireConfetti();
+            }, 600);
+        }
+
+        function fireConfetti() {
+            const colors = ['#f472b6', '#60a5fa', '#c084fc', '#facc15', '#a7f3d0'];
+            const screen = document.getElementById('stage-7');
+            
+            for(let i=0; i<100; i++) {
+                const conf = document.createElement('div');
+                conf.style.position = 'absolute';
+                conf.style.width = Math.random() > 0.5 ? '8px' : '12px';
+                conf.style.height = conf.style.width;
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.left = '50%';
+                conf.style.top = '50%';
+                conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                conf.style.zIndex = '20';
+                conf.style.pointerEvents = 'none';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 100 + Math.random() * 200;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity - 100;
+                
+                screen.appendChild(conf);
+                void conf.offsetWidth; // Reflow
+                
+                conf.style.transition = 'all 3s cubic-bezier(0.25, 1, 0.5, 1), opacity 3s ease-in';
+                conf.style.transform = `translate(${tx}vw, ${ty}vh) rotate(${Math.random()*720}deg)`;
+                conf.style.opacity = '0';
+
+                setTimeout(() => conf.remove(), 3100);
+            }
+        }
+    </script>
+</body>
+</html>
