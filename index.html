@@ -278,6 +278,46 @@
             -webkit-text-fill-color: transparent;
         }
 
+        /* Brain Scanner Styles */
+        .scan-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+        }
+        .scan-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: filter 0.5s;
+        }
+        .scan-container.scanning img {
+            filter: sepia(1) hue-rotate(200deg) saturate(3) contrast(1.2);
+        }
+        .scanner-laser {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: #22c55e;
+            box-shadow: 0 0 15px #22c55e, 0 0 30px #4ade80, 0 0 45px #4ade80;
+            opacity: 0;
+            z-index: 10;
+        }
+        .scan-container.scanning .scanner-laser {
+            opacity: 1;
+            animation: scan-laser 1.2s ease-in-out infinite alternate;
+        }
+        @keyframes scan-laser {
+            0% { top: -5px; }
+            100% { top: calc(100% + 5px); }
+        }
+
         /* Blinking Red Alert for Screen 2 */
         .alert-bg {
             background: radial-gradient(circle, rgba(220,38,38,0.2) 0%, transparent 70%);
@@ -373,7 +413,34 @@
         </div>
     </section>
 
+    <!-- STAGE 5: BRAIN SCANNER -->
     <section id="stage-5" class="screen">
+        <div class="glass-panel border-purple-500/30">
+            <div class="text-5xl mb-4">🧠</div>
+            <h2 class="text-2xl font-black text-purple-300 mb-4 uppercase font-anton tracking-wider">Advanced Brain Scan</h2>
+            <p class="text-gray-300 text-sm mb-6">Initiating deep neural analysis to find any sign of intelligence...</p>
+            
+            <div id="brain-scanner" class="scan-container mb-6">
+                <!-- PLACEHOLDER FOR FRIEND'S PHOTO -->
+                <img src="https://placehold.co/400x400/302b63/ffffff?text=Dost+Ki+Photo+Yahan+Daalo" alt="Dost ki Photo" id="friend-photo">
+                <div class="scanner-laser"></div>
+            </div>
+
+            <div class="h-28 flex items-center justify-center mb-2">
+                <p id="scan-result" class="text-red-400 font-bold text-sm transition-opacity opacity-0 hidden w-full"></p>
+            </div>
+
+            <button id="btn-scan" class="glass-btn text-purple-300 border-purple-500 w-full bg-purple-900/30">
+                Scan Brain
+            </button>
+            <button id="btn-5" class="glass-btn text-purple-300 border-purple-500 w-full bg-purple-900/30 hidden">
+                Next Stage
+            </button>
+        </div>
+    </section>
+
+    <!-- STAGE 6: THE FAKE GIFT (Formerly Stage 5) -->
+    <section id="stage-6" class="screen">
         <div class="text-center w-full px-4 flex flex-col items-center">
             <h2 class="text-2xl md:text-3xl font-bold text-blue-200 mb-10 drop-shadow-md">
                 Time for your very special gift...
@@ -387,13 +454,14 @@
                 </h1>
             </div>
 
-            <button id="btn-5" class="mt-12 glass-btn text-white bg-black/60 border-white/20 text-sm hover:bg-black/90 px-8 py-3">
+            <button id="btn-6" class="mt-12 glass-btn text-white bg-black/60 border-white/20 text-sm hover:bg-black/90 px-8 py-3">
                 Okay, chill... show me the real thing.
             </button>
         </div>
     </section>
 
-    <section id="stage-6" class="screen">
+    <!-- STAGE 7: CONTRACT (Formerly Stage 6) -->
+    <section id="stage-7" class="screen">
         <div class="glass-panel border-green-500/30 text-left">
             <h2 class="text-2xl font-black text-green-400 mb-4 uppercase font-anton text-center">Mandatory T&C</h2>
             
@@ -410,13 +478,14 @@
                 <span class="text-sm font-semibold text-white">I agree to give a massive party (Ludo mandatory) and pay for everything.</span>
             </label>
 
-            <button id="btn-6" class="glass-btn text-green-300 border-green-500 w-full bg-green-900/30" disabled>
+            <button id="btn-7" class="glass-btn text-green-300 border-green-500 w-full bg-green-900/30" disabled>
                 Sign Contract
             </button>
         </div>
     </section>
 
-    <section id="stage-7" class="screen">
+    <!-- STAGE 8: CAKE (Formerly Stage 7) -->
+    <section id="stage-8" class="screen">
         <div class="glass-panel !max-w-2xl relative z-10 flex flex-col items-center bg-black/40">
             <p id="cake-instruction" class="text-pink-300 font-bold mb-4 animate-pulse text-lg">
                 Tap the flames to blow out the candles!
@@ -520,12 +589,40 @@
             navigate('stage-4', 'stage-5');
         });
 
+        // Brain Scanner Logic
+        document.getElementById('btn-scan').addEventListener('click', () => {
+            const scanner = document.getElementById('brain-scanner');
+            const result = document.getElementById('scan-result');
+            const scanBtn = document.getElementById('btn-scan');
+            const nextBtn = document.getElementById('btn-5');
+
+            scanBtn.style.display = 'none';
+            scanner.classList.add('scanning');
+            
+            result.classList.remove('hidden');
+            result.innerText = "Scanning neural pathways... analyzing IQ... detecting gamer skills...";
+            result.style.opacity = '1';
+            result.className = "text-yellow-300 font-mono text-sm transition-opacity opacity-100 text-center animate-pulse";
+
+            setTimeout(() => {
+                scanner.classList.remove('scanning');
+                result.className = "text-red-400 font-bold text-base transition-opacity opacity-100 text-center uppercase";
+                result.innerHTML = "ERROR 404: BRAIN NOT FOUND!<br><br><span class='text-sm text-gray-200 capitalize font-medium'>Sirf non-gaming rich boy attitude, Ludo, aur gaaliyan bhari hain iske dimaag me!</span>";
+                
+                nextBtn.classList.remove('hidden');
+            }, 3000);
+        });
+
         document.getElementById('btn-5').addEventListener('click', () => {
             navigate('stage-5', 'stage-6');
         });
 
         document.getElementById('btn-6').addEventListener('click', () => {
             navigate('stage-6', 'stage-7');
+        });
+
+        document.getElementById('btn-7').addEventListener('click', () => {
+            navigate('stage-7', 'stage-8');
         });
 
         const stickersList = ['🤡', '🔥', '😂', '💸', '🍻', '💩', '😎', '🖕', '🎮'];
@@ -645,7 +742,7 @@
         }
 
         const checkbox = document.getElementById('party-checkbox');
-        const signBtn = document.getElementById('btn-6');
+        const signBtn = document.getElementById('btn-7');
         
         checkbox.addEventListener('change', (e) => {
             signBtn.disabled = !e.target.checked;
@@ -673,7 +770,7 @@
 
         function fireConfetti() {
             const colors = ['#f472b6', '#60a5fa', '#c084fc', '#facc15', '#a7f3d0'];
-            const screen = document.getElementById('stage-7');
+            const screen = document.getElementById('stage-8');
             
             for(let i=0; i<100; i++) {
                 const conf = document.createElement('div');
